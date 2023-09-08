@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  test_client:
+  test_qdrant_client:
     image: python:3.10-slim
     tty: true
     volumes:
