@@ -22,7 +22,7 @@ documents = [
 encoder = SentenceTransformer('all-MiniLM-L6-v2') 
 
 qdrant.recreate_collection(
-	collection_name="my_books",
+	collection_name="test_product",
 	vectors_config=models.VectorParams(
 		size=encoder.get_sentence_embedding_dimension(), # Vector size is defined by used model
 		distance=models.Distance.COSINE

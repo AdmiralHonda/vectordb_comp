@@ -1,7 +1,7 @@
 version: '3.4'
 services:
-  test_qdrant_client:
-    image: python:3.10-slim
+  test_weaviate_client:
+    build: .
     tty: true
     volumes:
       - ./test_source:/work

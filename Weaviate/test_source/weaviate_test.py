@@ -1,7 +1,12 @@
-from qdrant_client import models, QdrantClient
+import weaviate
 from sentence_transformers import SentenceTransformer
+import json
 
-qdrant = QdrantClient("http://test_qdrant:6333") 
+client = weaviate.Client(
+    url = "http://test_weaviate:8080",
+)
+
+encoder = SentenceTransformer('all-MiniLM-L6-v2') 
 
 documents = [
 { "name": "The Time Machine", "description": "A man travels through time and witnesses the evolution of humanity.", "author": "H.G. Wells", "year": 1895 },
@@ -19,31 +24,51 @@ documents = [
 { "name": "The Three-Body Problem", "description": "Humans encounter an alien civilization that lives in a dying system.", "author": "Liu Cixin", "year": 2008 }
 ]
 
-encoder = SentenceTransformer('all-MiniLM-L6-v2') 
+test_collection = {
+    "class" : "TestContentSearch",
+    'vectorIndexConfig': {
+        'distance': 'cosine',
+    },
+    "vectorizer" : "none",
+    "properties": [
+        {
+            "name": "name",
+            "dataType": ["text"]
+        },
+        {
+            "name": "description",
+            "dataType": ["text"]
+        }
 
-qdrant.recreate_collection(
-	collection_name="my_books",
-	vectors_config=models.VectorParams(
-		size=encoder.get_sentence_embedding_dimension(), # Vector size is defined by used model
-		distance=models.Distance.COSINE
-	)
-)
+        ]
+}
+try:
+    client.schema.create_class(test_collection)
+except Exception as e:
+    print(e)
 
-qdrant.upload_records(
-	collection_name="my_books",
-	records=[
-		models.Record(
-			id=idx,
-			vector=encoder.encode(doc["description"]).tolist(),
-			payload=doc
-		) for idx, doc in enumerate(documents)
-	]
-)
+print(client.schema.get())
 
-hits = qdrant.search(
-	collection_name="my_books",
-	query_vector=encoder.encode("alien invasion").tolist(),
-	limit=3
+# データの登録
+for doc in documents :
+    client.data_object.create(
+        data_object={
+            "name" : doc["name"],
+            "description" : doc["description"]
+         },
+        vector=encoder.encode(doc["description"]).tolist(),
+        class_name="TestContentSearch"
+    )
+
+# データの検索
+
+response = (
+    client.query
+    .get("TestContentSearch",["name","description"])
+    .with_near_vector({
+        "vector" : encoder.encode("alien invasion").tolist()
+    })
+    .with_limit(3)
+    .do()
 )
-for hit in hits:
-	print(hit.payload, "score:", hit.score)
+print(json.dumps(response, indent=2))
