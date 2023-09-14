@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  test_qdrant_client:
+    image: python:3.10-slim
+    tty: true
+    volumes:
+      - ./test_source:/work
+    depends_on:
+      - test_qdrant
+
+  test_qdrant:
+    image: qdrant/qdrant:v1.5.0
